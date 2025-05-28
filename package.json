@@ -1,6 +1,7 @@
 {
   "name": "calendar-proxy",
   "version": "1.0.0",
+  "description": "Family Command Center with server-side calendar proxy to avoid CORS issues.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
