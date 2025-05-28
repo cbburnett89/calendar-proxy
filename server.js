@@ -7,7 +7,8 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-const CALENDAR_URL = 'https://p170-caldav.icloud.com/published/2/MjcwMjYzNDM5MjcwMjYzNHk1U5T4VL-qp5PnCN00Zsli_0keMwpeC76yLSvz0c4nerZzIP1fv_KGSRdR9iY9aN3sAJ67A2EEBAczAGVznM4';
+// Use your new Google Calendar .ics link here:
+const CALENDAR_URL = 'https://calendar.google.com/calendar/ical/ju4bjb5dlku7bgc1hrts5bmpngh4i2p4%40import.calendar.google.com/public/basic.ics';
 
 app.get('/api/calendar', async (req, res) => {
   try {
