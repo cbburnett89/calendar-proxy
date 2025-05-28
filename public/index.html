@@ -1,35 +1,363 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Calendar Dashboard</title>
-  <link rel="stylesheet" href="style.css"/>
+  <meta charset="UTF-8">
+  <title>Family Command Center</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Quicksand:700&display=swap">
+  <script src="https://cdn.jsdelivr.net/npm/ical.js@1.4.0/build/ical.min.js"></script>
+  <style>
+    body { font-family: 'Quicksand', Arial, sans-serif; margin: 0; background: #f9fafc; }
+    .header { background: #54b5fa; color: white; padding: 24px 20px 18px 20px; text-align: center; font-size: 2.4rem; letter-spacing: 2px; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; box-shadow: 0 4px 16px rgba(84,181,250,0.14); position: relative; width: 100vw; max-width: 100vw; }
+    .header-btn { position: absolute; right: 40px; top: 30px; background: #fff; color: #54b5fa; border: none; font-size: 1.15rem; padding: 10px 22px; border-radius: 22px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.03); transition: background 0.2s; }
+    .header-btn:hover { background: #e3f3ff; }
+    .main-content { width: 100vw; max-width: 100vw; margin: 0; display: flex; flex-direction: column; align-items: stretch; }
+    .rewards-bar { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; padding: 18px 0 10px 0; margin: 0 0 8px 0; background: #fffbe7; border-bottom: 2px solid #ffeaa7; font-size: 1.16rem; }
+    .reward-card { background: #ffeeb7; color: #a47506; padding: 11px 26px; border-radius: 16px; font-weight: bold; box-shadow: 0 1px 4px rgba(255,238,183,0.13); display: flex; align-items: center; gap: 9px; min-width: 130px; justify-content: center; font-size: 1.13rem; }
+    .reward-member-color { width: 18px; height: 18px; border-radius: 50%; margin-right: 7px; border: 2px solid #fff; }
+    .landscape-grid { display: flex; flex-direction: row; gap: 36px; justify-content: space-evenly; align-items: flex-start; width: 100vw; max-width: 100vw; min-height: 510px; margin: 0 auto; margin-bottom: 32px; }
+    .widget { background: white; padding: 22px 20px 18px 20px; border-radius: 18px; box-shadow: 0 2px 14px rgba(0,0,0,0.08); min-width: 310px; max-width: 380px; flex: 1 1 0; margin-bottom: 18px; display: flex; flex-direction: column; align-items: stretch; min-height: 355px; max-height: 90vh; overflow: hidden; }
+    .widget h2 { font-size: 1.45rem; margin: 0 0 16px 0; color: #54b5fa; letter-spacing: 1px; text-align: center; }
+    .calendar-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; max-height: 320px; }
+    .calendar-event { background: #f5faff; border-left: 6px solid #54b5fa; margin-bottom: 14px; padding: 12px 14px 12px 14px; border-radius: 10px; box-shadow: 0 1px 6px rgba(84,181,250,0.04); display: flex; align-items: center; gap: 18px; font-size: 1.15rem; }
+    .calendar-date { font-size: 1.13rem; font-weight: bold; color: #388fcc; min-width: 68px; text-align: center; }
+    .calendar-title { font-size: 1.09rem; color: #333; flex: 1; }
+    .calendar-error { color: #d35400; font-size: 1.06rem; text-align: center; margin-top: 18px; }
+    .weather-row { display: flex; align-items: center; justify-content: center; gap: 18px; margin-bottom: 8px; }
+    .weather-icon { font-size: 2.2rem; }
+    .weather-info { font-size: 1.18rem; color: #388fcc; font-weight: bold; }
+    .chores-grid { display: flex; flex-wrap: wrap; gap: 18px; justify-content: flex-start; align-content: flex-start; min-height: 300px; }
+    .chore-card { background: #f5faff; border-radius: 20px; box-shadow: 0 1px 4px rgba(84,181,250,0.09); padding: 22px 12px 16px 12px; min-width: 150px; width: 170px; display: flex; flex-direction: column; align-items: center; margin-bottom: 10px; position: relative; transition: box-shadow 0.2s; }
+    .chore-card.completed { background: #d4f8e8; opacity: 0.7; text-decoration: line-through; }
+    .chore-icon { font-size: 2.5rem; margin-bottom: 8px; }
+    .chore-category { font-size: 1.2rem; font-weight: bold; margin-bottom: 8px; color: #333; text-align: center; }
+    .chore-member { background: #54b5fa; color: #fff; padding: 5px 14px; border-radius: 12px; font-size: 1.1rem; margin-bottom: 12px; margin-top: 4px; }
+    .chore-actions { display: flex; gap: 10px; margin-top: 10px; }
+    .chore-btn { border: none; border-radius: 16px; background: #54b5fa; color: #fff; padding: 7px 15px; font-size: 1.1rem; cursor: pointer; transition: background 0.18s; font-weight: bold; }
+    .chore-btn.complete-btn { background: #4bd47b; }
+    .chore-btn.complete-btn:hover { background: #38b76c; }
+    .chore-btn.delete-btn { background: #ff7070;}
+    .chore-btn.delete-btn:hover { background: #fa5252;}
+    #add-chore-fab { position: fixed; right: 42px; bottom: 42px; background: #54b5fa; color: #fff; border: none; border-radius: 50%; width: 70px; height: 70px; font-size: 2.5rem; box-shadow: 0 4px 16px rgba(84,181,250,0.17); cursor: pointer; z-index: 20; transition: background 0.18s; display: flex; align-items: center; justify-content: center; }
+    #add-chore-fab:hover { background: #388fcc; }
+    .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100vw; height: 100vh; overflow: auto; background: rgba(84,181,250,0.12); }
+    .modal-content { background: #fff; margin: 8% auto; padding: 26px 20px 18px 20px; border-radius: 24px; width: 96%; max-width: 370px; position: relative; box-shadow: 0 6px 28px rgba(84,181,250,0.16); text-align: center; }
+    .close { color: #aaa; position: absolute; right: 26px; top: 18px; font-size: 32px; font-weight: bold; cursor: pointer; transition: color 0.16s; }
+    .close:hover, .close:focus { color: #54b5fa; text-decoration: none; cursor: pointer; }
+    label { display: block; margin: 16px 0 3px 4px; text-align: left; color: #333; font-size: 1rem; font-weight: bold; }
+    select { width: 100%; padding: 8px 6px; border-radius: 8px; border: 1px solid #c4e0f9; font-size: 1.1rem; background: #f5faff; margin-bottom: 10px; }
+    @media (max-width: 1100px) { .landscape-grid { flex-direction: column; gap: 20px; align-items: center;} }
+    @media (max-width: 600px) { .landscape-grid { flex-direction: column; gap: 16px; align-items: center;} .widget { max-width: 98vw; min-width: 220px;} .chores-grid { flex-direction: column; align-items: center; } .chore-card { min-width: 90vw; width: 95vw; } .main-content { padding-bottom: 120px; } #add-chore-fab { right: 18px; bottom: 18px; width: 58px; height: 58px; font-size: 2rem; } }
+  </style>
 </head>
 <body>
-  <div class="sidebar">
-    <div class="sidebar-header">
-      <h2>calendar-proxy</h2>
-    </div>
-    <ul class="sidebar-menu">
-      <li class="active">Dashboard</li>
-      <li>Events</li>
-      <li>Settings</li>
-      <li>Help</li>
-    </ul>
+  <div class="header">
+    Family Command Center
+    <button class="header-btn" id="edit-members-btn">Edit Family</button>
   </div>
   <div class="main-content">
-    <header>
-      <h1>Calendar</h1>
-      <div class="user-info">
-        <span class="user-avatar">CB</span>
-        <span class="user-name">cbburnett89</span>
+    <div class="rewards-bar" id="rewards-list"></div>
+    <div class="landscape-grid">
+      <div class="widget" id="calendar-widget">
+        <h2>Family Calendar</h2>
+        <ul class="calendar-list" id="calendar-content">
+          <li>Loading calendar...</li>
+        </ul>
+        <div id="calendar-error-message" class="calendar-error" style="display:none;">
+          <b>Calendar not loading?</b> <br>
+          Apple iCloud calendars block loading from browsers for security reasons.<br>
+          <span style="font-size:0.98em">You can use a <b>Google public calendar .ics link</b>, or this iCloud link with a CORS proxy.<br>
+          <span style="font-size:0.94em">To change the calendar, edit <code>calendarUrl</code> in the source.</span>
+        </div>
       </div>
-    </header>
-    <section class="calendar-section">
-      <iframe src="https://calendar.google.com/calendar/embed?src=your_calendar_url_here"
-              style="border:0" width="100%" height="600" frameborder="0" scrolling="no"></iframe>
-    </section>
+      <div class="widget" id="weather-widget">
+        <h2>Weather</h2>
+        <div id="weather-content">Loading weather...</div>
+      </div>
+      <div class="widget" id="chores-widget">
+        <h2>Chore Board</h2>
+        <div class="chores-grid" id="chores-list"></div>
+      </div>
+    </div>
   </div>
+  <!-- Add Chore Modal -->
+  <button id="add-chore-fab" aria-label="Add Chore">+</button>
+  <div id="add-chore-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="add-chore-title">
+    <div class="modal-content">
+      <span class="close" id="close-chore-modal" tabindex="0" aria-label="Close">&times;</span>
+      <h2 id="add-chore-title">Add Chore</h2>
+      <form id="add-chore-form">
+        <label for="chore-category">Chore</label>
+        <select id="chore-category" required></select>
+        <label for="chore-member">Assign to</label>
+        <select id="chore-member" required></select>
+        <button type="submit" class="chore-btn" style="width:100%;margin-top:14px;">Add</button>
+      </form>
+    </div>
+  </div>
+  <!-- Edit Members Modal -->
+  <div id="edit-members-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-members-title">
+    <div class="modal-content">
+      <span class="close" id="close-members-modal" tabindex="0" aria-label="Close">&times;</span>
+      <h2 id="edit-members-title">Edit Family</h2>
+      <form id="edit-members-form"></form>
+      <button class="chore-btn" id="save-members-btn" style="width:100%;">Save</button>
+    </div>
+  </div>
+  <script>
+    // --------- Chore Categories and Members ---------
+    const choreCategories = [
+      { name: "Make Bed", icon: "🛏️" },
+      { name: "Homework", icon: "📚" },
+      { name: "Brush Teeth", icon: "🪥" },
+      { name: "Feed Pet", icon: "🐶" },
+      { name: "Pick Up Toys", icon: "🧸" },
+      { name: "Read", icon: "📖" },
+      { name: "Set Table", icon: "🍽️" },
+      { name: "Water Plants", icon: "🪴" }
+    ];
+    let defaultMembers = [
+      { name: "Mom", color: "#e74c3c" },
+      { name: "Dad", color: "#3498db" },
+      { name: "Alex", color: "#2ecc71" },
+      { name: "Sam", color: "#9b59b6" },
+      { name: "Taylor", color: "#f1c40f" }
+    ];
+    let members = JSON.parse(localStorage.getItem('members')) || defaultMembers;
+    let chores = JSON.parse(localStorage.getItem('chores')) || [];
+    let rewards = JSON.parse(localStorage.getItem('rewards')) || Array(members.length).fill(0);
+
+    function saveData() {
+      localStorage.setItem('chores', JSON.stringify(chores));
+      localStorage.setItem('rewards', JSON.stringify(rewards));
+      localStorage.setItem('members', JSON.stringify(members));
+    }
+    function loadData() {
+      members = JSON.parse(localStorage.getItem('members')) || defaultMembers;
+      chores = JSON.parse(localStorage.getItem('chores')) || [];
+      rewards = JSON.parse(localStorage.getItem('rewards')) || Array(members.length).fill(0);
+      renderMembers(); renderChores(); renderRewards();
+    }
+    function renderChores() {
+      const list = document.getElementById('chores-list');
+      list.innerHTML = '';
+      chores.forEach((chore, idx) => {
+        const member = members[chore.member];
+        const category = choreCategories[chore.category];
+        const card = document.createElement('div');
+        card.className = 'chore-card' + (chore.completed ? ' completed' : '');
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'chore-icon';
+        iconDiv.textContent = category.icon;
+        const catDiv = document.createElement('div');
+        catDiv.className = 'chore-category';
+        catDiv.textContent = category.name;
+        const memDiv = document.createElement('div');
+        memDiv.className = 'chore-member';
+        memDiv.style.background = member.color;
+        memDiv.textContent = member.name;
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'chore-actions';
+        const completeBtn = document.createElement('button');
+        completeBtn.className = 'chore-btn complete-btn';
+        completeBtn.innerHTML = chore.completed ? '✔️ Done' : 'Mark Done';
+        completeBtn.disabled = chore.completed;
+        completeBtn.onclick = () => completeChore(idx);
+        actionsDiv.appendChild(completeBtn);
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'chore-btn delete-btn';
+        deleteBtn.innerHTML = 'Delete';
+        deleteBtn.onclick = () => deleteChore(idx);
+        actionsDiv.appendChild(deleteBtn);
+        card.appendChild(iconDiv);
+        card.appendChild(catDiv);
+        card.appendChild(memDiv);
+        card.appendChild(actionsDiv);
+        list.appendChild(card);
+      });
+      saveData();
+    }
+    function completeChore(idx) {
+      if (!chores[idx].completed) {
+        chores[idx].completed = true;
+        rewards[chores[idx].member] = (rewards[chores[idx].member] || 0) + 10;
+        renderChores(); renderRewards(); saveData();
+      }
+    }
+    function deleteChore(idx) {
+      if (confirm("Delete this chore?")) { chores.splice(idx, 1); renderChores(); saveData(); }
+    }
+    function renderRewards() {
+      const rewardsList = document.getElementById('rewards-list');
+      rewardsList.innerHTML = '';
+      members.forEach((member, idx) => {
+        const card = document.createElement('div');
+        card.className = 'reward-card';
+        card.innerHTML = `<span class="reward-member-color" style="background:${member.color}"></span>
+            ${member.name}: <span>${rewards[idx]}</span> pts`;
+        rewardsList.appendChild(card);
+      });
+    }
+    const addChoreFab = document.getElementById('add-chore-fab');
+    const addChoreModal = document.getElementById('add-chore-modal');
+    const closeChoreModal = document.getElementById('close-chore-modal');
+    function openAddChore() {
+      const catSel = document.getElementById('chore-category');
+      catSel.innerHTML = '';
+      choreCategories.forEach((cat, idx) => {
+        catSel.innerHTML += `<option value="${idx}">${cat.icon} ${cat.name}</option>`;
+      });
+      const memSel = document.getElementById('chore-member');
+      memSel.innerHTML = '';
+      members.forEach((mem, idx) => {
+        memSel.innerHTML += `<option value="${idx}">${mem.name}</option>`;
+      });
+      addChoreModal.style.display = 'block';
+      catSel.focus();
+    }
+    function closeAddChore() { addChoreModal.style.display = 'none'; }
+    addChoreFab.onclick = openAddChore;
+    closeChoreModal.onclick = closeAddChore;
+    window.onclick = function(event) {
+      if (event.target == addChoreModal) closeAddChore();
+      if (event.target == editMembersModal) closeEditMembers();
+    };
+    window.addEventListener('keydown', function(e){
+      if(e.key==='Escape') {
+        if(addChoreModal.style.display==='block') closeAddChore();
+        if(editMembersModal.style.display==='block') closeEditMembers();
+      }
+    });
+    document.getElementById('add-chore-form').onsubmit = function(e) {
+      e.preventDefault();
+      const category = parseInt(document.getElementById('chore-category').value);
+      const member = parseInt(document.getElementById('chore-member').value);
+      const chore = { category, member, completed: false };
+      chores.push(chore);
+      closeAddChore(); renderChores(); saveData();
+      return false;
+    };
+    const editMembersModal = document.getElementById('edit-members-modal');
+    const editBtn = document.getElementById('edit-members-btn');
+    const closeMembersModal = document.getElementById('close-members-modal');
+    const saveMembersBtn = document.getElementById('save-members-btn');
+    editBtn.onclick = showEditMembers;
+    closeMembersModal.onclick = closeEditMembers;
+    function showEditMembers() {
+      const form = document.getElementById('edit-members-form');
+      form.innerHTML = '';
+      members.forEach((member, idx) => {
+        form.innerHTML += `
+          <label for="member-name-${idx}">Name for member ${idx+1}</label>
+          <input id="member-name-${idx}" type="text" value="${member.name}" maxlength="20" style="width:100%;padding:7px 7px;margin-bottom:8px;" aria-label="Edit member name">
+          <label for="member-color-${idx}">Color</label>
+          <input id="member-color-${idx}" type="color" value="${member.color}" style="width:48px;height:36px;margin-bottom:12px;" aria-label="Edit member color">
+        `;
+      });
+      editMembersModal.style.display = 'block';
+      setTimeout(()=>form.querySelector('input')?.focus(), 100);
+    }
+    function closeEditMembers() { editMembersModal.style.display = 'none'; }
+    saveMembersBtn.onclick = () => {
+      for(let i=0;i<members.length;i++) {
+        members[i].name = document.getElementById(`member-name-${i}`).value || `Member ${i+1}`;
+        members[i].color = document.getElementById(`member-color-${i}`).value || defaultMembers[i].color;
+      }
+      saveData(); renderMembers(); renderChores(); closeEditMembers();
+    };
+    function renderMembers() {
+      renderRewards();
+      if(addChoreModal.style.display==='block') openAddChore();
+    }
+
+    // -------------- CALENDAR CODE (multi-proxy fallback) --------------
+    const calendarRawUrl = "https://p170-caldav.icloud.com/published/2/MjcwMjYzNDM5MjcwMjYzNHk1U5T4VL-qp5PnCN00Zsli_0keMwpeC76yLSvz0c4nerZzIP1fv_KGSRdR9iY9aN3sAJ67A2EEBAczAGVznM4";
+    const proxies = [
+      url => `https://corsproxy.io/?${url}`,
+      url => `https://cors-anywhere.herokuapp.com/${url}`,
+      url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+    ];
+    async function fetchCalendarWithFallback(proxies, url, attempt = 0) {
+      if (attempt >= proxies.length) {
+        document.getElementById('calendar-content').innerHTML = '';
+        document.getElementById('calendar-error-message').style.display = "block";
+        return;
+      }
+      let proxyUrl = proxies[attempt](url);
+      try {
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error("Proxy failed");
+        const icsData = await response.text();
+        const jcalData = ICAL.parse(icsData);
+        const comp = new ICAL.Component(jcalData);
+        const events = comp.getAllSubcomponents('vevent')
+          .map(event => new ICAL.Event(event))
+          .filter(ev => ev.startDate && new Date(ev.startDate.toString()) >= new Date(new Date().setHours(0,0,0,0)))
+          .sort((a, b) => new Date(a.startDate.toString()) - new Date(b.startDate.toString()));
+        let html = '';
+        const maxEvents = 7;
+        if (events.length === 0) html = '<li>No upcoming events found.</li>';
+        events.slice(0, maxEvents).forEach(ev => {
+          const dateObj = new Date(ev.startDate.toString());
+          const month = dateObj.toLocaleString(undefined, { month: 'short' });
+          const day = dateObj.getDate();
+          const hour = dateObj.getHours();
+          const min = dateObj.getMinutes();
+          let timeStr = '';
+          if (hour || min)
+            timeStr = ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+          html += `<li class="calendar-event">
+            <div class="calendar-date">${month}<br><span style="font-size:1.3rem">${day}</span>${timeStr}</div>
+            <div class="calendar-title">${ev.summary || '(No Title)'}</div>
+          </li>`;
+        });
+        document.getElementById('calendar-content').innerHTML = html;
+        document.getElementById('calendar-error-message').style.display = "none";
+      } catch (err) {
+        fetchCalendarWithFallback(proxies, url, attempt + 1);
+      }
+    }
+
+    // -------------- WEATHER CODE (FAHRENHEIT) --------------
+    async function fetchWeather() {
+      const latitude = 29.7030;
+      const longitude = -98.1245;
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&temperature_unit=fahrenheit`;
+      try {
+        const response = await fetch(weatherUrl);
+        const weatherData = await response.json();
+        if (weatherData && weatherData.current_weather) {
+          const temp = weatherData.current_weather.temperature;
+          const wind = weatherData.current_weather.wind_speed;
+          const code = weatherData.current_weather.weathercode;
+          let icon = "☀️";
+          if ([1,2,3].includes(code)) icon = "☁️";
+          if ([45,48].includes(code)) icon = "🌫️";
+          if ([51,53,55,61,63,65,80,81,82].includes(code)) icon = "🌦️";
+          if ([71,73,75,77,85,86].includes(code)) icon = "❄️";
+          if ([95,96,99].includes(code)) icon = "⛈️";
+          const html = `
+            <div class="weather-row">
+              <span class="weather-icon">${icon}</span>
+              <span class="weather-info">${temp}&deg;F</span>
+            </div>
+            <div style="text-align:center; font-size:1rem; color:#666;">Wind: ${wind} mph</div>
+          `;
+          document.getElementById('weather-content').innerHTML = html;
+        } else {
+          document.getElementById('weather-content').textContent = 'No weather data available';
+        }
+      } catch (err) {
+        document.getElementById('weather-content').textContent = 'Error loading weather data';
+      }
+    }
+
+    // -------------- INIT --------------
+    loadData();
+    fetchCalendarWithFallback(proxies, calendarRawUrl.replace(/^https?:\/\//, 'https://'));
+    fetchWeather();
+    setInterval(() => fetchCalendarWithFallback(proxies, calendarRawUrl.replace(/^https?:\/\//, 'https://')), 1000 * 60 * 5);
+    setInterval(fetchWeather, 1000 * 60 * 5);
+  </script>
 </body>
 </html>
