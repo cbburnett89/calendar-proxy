@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wall Calendar Dashboard</title>
+</head>
+<body>
+  <h1>My Family Calendar</h1>
+  <pre id="calendar-output">Loading calendar...</pre>
+  <script>
+    fetch('/api/calendar')
+      .then(response => {
+        if (!response.ok) throw new Error("Network response was not ok");
+        return response.text();
+      })
+      .then(data => {
+        document.getElementById("calendar-output").textContent = data;
+      })
+      .catch(error => {
+        document.getElementById("calendar-output").textContent = "Error loading calendar: " + error;
+      });
+  </script>
+</body>
+</html>
